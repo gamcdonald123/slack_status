@@ -28,8 +28,14 @@ gem "kamal", require: false
 gem "thruster", require: false
 
 gem "slack-ruby-client"
-gem "microsoft_graph"
 gem "dotenv"
+gem "oauth2"
+
+
+gem "microsoft_graph", "~> 0.22.2"
+gem "microsoft_graph_core"
+gem "microsoft_kiota_authentication_oauth"
+gem 'microsoft_kiota_abstractions'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
