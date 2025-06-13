@@ -72,6 +72,8 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    addressable (2.8.7)
+      public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
     base64 (0.3.0)
     bcrypt_pbkdf (1.1.1)
@@ -97,11 +99,25 @@ GEM
     erubi (1.13.1)
     et-orbi (1.2.11)
       tzinfo
+    faraday (2.13.1)
+      faraday-net_http (>= 2.0, < 3.5)
+      json
+      logger
+    faraday-mashify (1.0.0)
+      faraday (~> 2.0)
+      hashie
+    faraday-multipart (1.1.0)
+      multipart-post (~> 2.0)
+    faraday-net_http (3.4.0)
+      net-http (>= 0.5.0)
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
+    gli (2.22.2)
+      ostruct
     globalid (1.2.1)
       activesupport (>= 6.1)
+    hashie (5.0.0)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     io-console (0.8.0)
@@ -109,10 +125,13 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
+    iso8601 (0.13.0)
     jbuilder (2.13.0)
       actionview (>= 5.0.0)
       activesupport (>= 5.0.0)
     json (2.12.2)
+    jwt (2.10.1)
+      base64
     kamal (2.6.1)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -136,8 +155,32 @@ GEM
       net-pop
       net-smtp
     marcel (1.0.4)
+    microsoft_graph (0.19.0)
+      microsoft_graph_core (>= 0.1, < 0.3)
+    microsoft_graph_core (0.1.0)
+      microsoft_kiota_abstractions (~> 0.12.0)
+      microsoft_kiota_authentication_oauth (~> 0.5.0)
+      microsoft_kiota_faraday (~> 0.10.0)
+      microsoft_kiota_serialization_json (~> 0.7.0)
+    microsoft_kiota_abstractions (0.12.0)
+      addressable (~> 2.7, >= 2.7.0)
+      iso8601 (~> 0.13.0)
+    microsoft_kiota_authentication_oauth (0.5.0)
+      microsoft_kiota_abstractions (~> 0.12.0, >= 0.12.0)
+      oauth2 (~> 2.0)
+    microsoft_kiota_faraday (0.10.0)
+      faraday (~> 2.7, >= 2.7.2)
+      microsoft_kiota_abstractions (~> 0.12.0, >= 0.12.0)
+    microsoft_kiota_serialization_json (0.7.0)
+      microsoft_kiota_abstractions (~> 0.12.0, >= 0.12.0)
+      uuidtools
     mini_mime (1.1.5)
     minitest (5.25.5)
+    multi_xml (0.7.2)
+      bigdecimal (~> 3.1)
+    multipart-post (2.4.1)
+    net-http (0.6.0)
+      uri
     net-imap (0.5.8)
       date
       net-protocol
@@ -169,6 +212,14 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.8-x86_64-linux-musl)
       racc (~> 1.4)
+    oauth2 (2.0.12)
+      faraday (>= 0.17.3, < 4.0)
+      jwt (>= 1.0, < 4.0)
+      logger (~> 1.2)
+      multi_xml (~> 0.5)
+      rack (>= 1.2, < 4)
+      snaky_hash (~> 2.0, >= 2.0.3)
+      version_gem (>= 1.1.8, < 3)
     ostruct (0.6.1)
     parallel (1.27.0)
     parser (3.3.8.0)
@@ -186,6 +237,7 @@ GEM
     psych (5.2.6)
       date
       stringio
+    public_suffix (6.0.2)
     puma (6.6.0)
       nio4r (~> 2.0)
     raabro (1.4.0)
@@ -265,6 +317,16 @@ GEM
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    slack-ruby-client (2.6.0)
+      faraday (>= 2.0)
+      faraday-mashify
+      faraday-multipart
+      gli
+      hashie
+      logger
+    snaky_hash (2.0.3)
+      hashie (>= 0.1.0, < 6)
+      version_gem (>= 1.1.8, < 3)
     solid_cache (1.0.7)
       activejob (>= 7.2)
       activerecord (>= 7.2)
@@ -306,6 +368,8 @@ GEM
     unicode-emoji (4.0.4)
     uri (1.0.3)
     useragent (0.16.11)
+    uuidtools (3.0.0)
+    version_gem (1.1.8)
     web-console (4.2.1)
       actionview (>= 6.0.0)
       activemodel (>= 6.0.0)
@@ -332,12 +396,15 @@ PLATFORMS
 DEPENDENCIES
   brakeman
   debug
+  dotenv
   jbuilder
   kamal
+  microsoft_graph
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)
   rubocop-rails-omakase
+  slack-ruby-client
   solid_cache
   solid_queue
   sqlite3 (>= 2.1)
