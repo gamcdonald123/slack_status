@@ -1,14 +1,15 @@
-require 'net/http'
-require 'uri'
-require 'json'
-require 'oauth2'
+require "net/http"
+require "uri"
+require "json"
+require "oauth2"
+require "fileutils"
 
-require 'microsoft_graph'
-require 'microsoft_graph_core'
-require 'microsoft_kiota_authentication_oauth'
-require 'microsoft_kiota_abstractions'
+require "microsoft_graph"
+require "microsoft_graph_core"
+require "microsoft_kiota_authentication_oauth"
+require "microsoft_kiota_abstractions"
 
-require_relative './simple_bearer_token_provider'
+require_relative "./simple_bearer_token_provider"
 
 class MsGraph
   TOKEN_FILE = Rails.root.join("tmp/ms_graph_token.json")
@@ -34,15 +35,48 @@ class MsGraph
     MicrosoftGraph::GraphServiceClient.new(adapter)
   end
 
+  def force_refresh_token
+    puts "🔄 Forcing token refresh..."
+    File.delete(TOKEN_FILE) if File.exist?(TOKEN_FILE)
+    load_or_authorize_token
+  end
+
   private
 
   def load_or_authorize_token
     if File.exist?(TOKEN_FILE)
-      saved = JSON.parse(File.read(TOKEN_FILE))
-      token = OAuth2::AccessToken.from_hash(@oauth_client, saved)
-      return token.refresh! if token.expired?
-      token
+      begin
+        saved = JSON.parse(File.read(TOKEN_FILE))
+        token = OAuth2::AccessToken.from_hash(@oauth_client, saved)
+
+        if token.expired?
+          puts "🔄 Token expired, attempting to refresh..."
+          begin
+            refreshed_token = token.refresh!
+            store_token(refreshed_token)
+            puts "✅ Token refreshed successfully!"
+            refreshed_token
+          rescue => e
+            puts "⚠️ Token refresh failed: #{e.message}"
+            puts "🔄 Falling back to device code flow..."
+            File.delete(TOKEN_FILE)
+            start_device_code_flow
+          end
+        else
+          puts "✅ Using existing valid token"
+          token
+        end
+      rescue JSON::ParserError => e
+        puts "⚠️ Invalid token file format: #{e.message}"
+        File.delete(TOKEN_FILE)
+        start_device_code_flow
+      rescue => e
+        puts "⚠️ Error loading token: #{e.message}"
+        File.delete(TOKEN_FILE)
+        start_device_code_flow
+      end
     else
+      puts "🔐 No token file found, starting device code flow..."
       start_device_code_flow
     end
   end
@@ -50,8 +84,8 @@ class MsGraph
   def start_device_code_flow
     uri = URI("https://login.microsoftonline.com/#{@tenant}/oauth2/v2.0/devicecode")
     res = Net::HTTP.post_form(uri, {
-      'client_id' => @client_id,
-      'scope'     => @scopes
+      "client_id" => @client_id,
+      "scope"     => @scopes
     })
 
     unless res.is_a?(Net::HTTPSuccess)
@@ -67,8 +101,8 @@ class MsGraph
   end
 
   def poll_for_token(data)
-    interval    = data['interval'] || 5
-    expires_at  = Time.now + data['expires_in']
+    interval    = data["interval"] || 5
+    expires_at  = Time.now + data["expires_in"]
     token_uri   = URI("https://login.microsoftonline.com/#{@tenant}/oauth2/v2.0/token")
 
     puts "Waiting for you to authorize the app... (expires in #{data['expires_in']}s)"
@@ -82,7 +116,7 @@ class MsGraph
       response = Net::HTTP.post_form(token_uri, {
         grant_type:  "urn:ietf:params:oauth:grant-type:device_code",
         client_id:   @client_id,
-        device_code: data['device_code']
+        device_code: data["device_code"]
       })
 
       body   = response.body.to_s.strip
@@ -118,6 +152,9 @@ class MsGraph
   end
 
   def store_token(token)
+    # Ensure the tmp directory exists
+    FileUtils.mkdir_p(File.dirname(TOKEN_FILE))
     File.write(TOKEN_FILE, token.to_hash.to_json)
+    puts "💾 Token stored successfully"
   end
 end

@@ -3,7 +3,56 @@ require_relative '../lib/ms_graph'
 require 'microsoft_kiota_abstractions'
 require 'slack-ruby-client'
 
-client = MsGraph.new.client
+def get_authenticated_client
+  max_retries = 3
+  retry_count = 0
+
+  while retry_count < max_retries
+    begin
+      puts "🔐 Attempting to authenticate with Microsoft Graph (attempt #{retry_count + 1}/#{max_retries})..."
+      client = MsGraph.new.client
+
+      # Test the authentication by making a simple API call
+      test_response = client.me.get
+      puts "✅ Authentication successful!"
+      return client
+
+    rescue MicrosoftGraph::Models::ODataErrorsODataError => e
+      if e&.error&.code == "InvalidAuthenticationToken" || e&.error&.code == "AuthenticationError"
+        puts "🔑 Authentication token expired or invalid. Attempting to refresh..."
+        retry_count += 1
+
+        if retry_count < max_retries
+          # Remove the old token file to force re-authentication
+          token_file = Rails.root.join("tmp/ms_graph_token.json")
+          File.delete(token_file) if File.exist?(token_file)
+          puts "🗑️ Removed old token file. Retrying authentication..."
+          sleep 2
+        else
+          puts "❌ Failed to authenticate after #{max_retries} attempts."
+          raise e
+        end
+      else
+        puts "🔴 Microsoft Graph error: #{e&.error&.code} - #{e&.error&.message}"
+        raise e
+      end
+    rescue => e
+      puts "⚠️ Authentication error: #{e.message}"
+      retry_count += 1
+
+      if retry_count < max_retries
+        puts "🔄 Retrying authentication..."
+        sleep 2
+      else
+        puts "❌ Failed to authenticate after #{max_retries} attempts."
+        raise e
+      end
+    end
+  end
+end
+
+# Get authenticated client with auto-retry
+client = get_authenticated_client
 
 start_time = Date.today.iso8601
 end_time   = (Date.today + 1).iso8601
